@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GasSense Pro — ESP32 Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Animated background grid -->
+  <div class="bg-grid"></div>
+  <div class="bg-particles" id="particles"></div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="2"/><path d="M12 28 Q16 16 20 20 Q24 24 28 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"/><circle cx="20" cy="20" r="3" fill="currentColor"/></svg>
+      </div>
+      <div class="logo-text">
+        <span class="logo-name">GasSense<span class="accent">Pro</span></span>
+        <span class="logo-sub">ESP32 · MQ2 · MQ135</span>
+      </div>
+    </div>
+
+    <div class="header-center">
+      <div class="status-badge" id="connectionStatus">
+        <span class="status-dot"></span>
+        <span class="status-text">CONNECTED</span>
+      </div>
+      <div class="last-update">Last update: <span id="lastUpdate">--:--:--</span></div>
+      <div class="last-update" id="fbStatus" style="font-size:0.62rem;">🔥 Firebase Initializing...</div>
+    </div>
+
+    <div class="header-right">
+      <button class="theme-toggle" id="themeToggle" title="Toggle Theme">
+        <span class="theme-icon sun">☀</span>
+        <span class="theme-icon moon">☽</span>
+      </button>
+      <button class="alert-btn" id="alertBtn">
+        <span>⚠</span>
+        <span class="alert-count" id="alertCount">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Dashboard -->
+  <main class="dashboard">
+
+    <!-- Top Row: MQ2 + MQ135 Big Gauges -->
+    <section class="gauges-row">
+
+      <!-- MQ2 Sensor -->
+      <div class="sensor-card mq2-card" id="mq2Card">
+        <div class="card-glow mq2-glow"></div>
+        <div class="card-header">
+          <div class="sensor-label">
+            <span class="sensor-tag">MQ-2</span>
+            <span class="sensor-name">Combustible Gas &amp; Smoke</span>
+          </div>
+          <div class="sensor-status" id="mq2Status">NORMAL</div>
+        </div>
+        <div class="gauge-wrap">
+          <canvas class="gauge-canvas" id="mq2Gauge" width="260" height="260"></canvas>
+          <div class="gauge-center">
+            <div class="gauge-value" id="mq2Value">---</div>
+            <div class="gauge-unit">ppm</div>
+          </div>
+        </div>
+        <div class="sensor-footer">
+          <div class="gas-chips">
+            <span class="chip">LPG</span>
+            <span class="chip">Butane</span>
+            <span class="chip">Propane</span>
+            <span class="chip">Smoke</span>
+            <span class="chip">H₂</span>
+          </div>
+          <div class="mini-graph">
+            <canvas id="mq2Mini" width="200" height="50"></canvas>
+          </div>
+        </div>
+        <div class="threshold-bar">
+          <div class="threshold-fill mq2-fill" id="mq2Fill"></div>
+          <span class="threshold-label">Threshold: 300 ppm</span>
+        </div>
+      </div>
+
+      <!-- MQ135 Sensor -->
+      <div class="sensor-card mq135-card" id="mq135Card">
+        <div class="card-glow mq135-glow"></div>
+        <div class="card-header">
+          <div class="sensor-label">
+            <span class="sensor-tag teal">MQ-135</span>
+            <span class="sensor-name">Air Quality &amp; Toxic Gas</span>
+          </div>
+          <div class="sensor-status" id="mq135Status">NORMAL</div>
+        </div>
+        <div class="gauge-wrap">
+          <canvas class="gauge-canvas" id="mq135Gauge" width="260" height="260"></canvas>
+          <div class="gauge-center">
+            <div class="gauge-value" id="mq135Value">---</div>
+            <div class="gauge-unit">ppm</div>
+          </div>
+        </div>
+        <div class="sensor-footer">
+          <div class="gas-chips">
+            <span class="chip teal">NH₃</span>
+            <span class="chip teal">CO₂</span>
+            <span class="chip teal">Alcohol</span>
+            <span class="chip teal">Benzene</span>
+            <span class="chip teal">NOₓ</span>
+          </div>
+          <div class="mini-graph">
+            <canvas id="mq135Mini" width="200" height="50"></canvas>
+          </div>
+        </div>
+        <div class="threshold-bar">
+          <div class="threshold-fill mq135-fill" id="mq135Fill"></div>
+          <span class="threshold-label">Threshold: 400 ppm</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Middle Row: Temp + Humidity + AQI -->
+    <section class="metrics-row">
+
+      <!-- Temperature — from OpenWeatherMap API -->
+      <div class="metric-card temp-card">
+        <div class="metric-icon">🌡</div>
+        <div class="metric-body">
+          <div class="metric-label">Temperature</div>
+          <div class="metric-value" id="tempValue">--.-</div>
+          <div class="metric-unit">°C</div>
+        </div>
+        <div class="temp-arc" id="tempArc">
+          <canvas id="tempGauge" width="100" height="100"></canvas>
+        </div>
+        <div class="metric-sub weather-source">
+          <span class="weather-dot">🌤</span>
+          <span id="weatherCity">Loading weather...</span>
+        </div>
+        <div class="weather-badge-wrap">
+          <span class="weather-badge" id="weatherBadge">--</span>
+        </div>
+      </div>
+
+      <!-- Humidity — from OpenWeatherMap API -->
+      <div class="metric-card hum-card">
+        <div class="metric-icon">💧</div>
+        <div class="metric-body">
+          <div class="metric-label">Humidity</div>
+          <div class="metric-value" id="humValue">--</div>
+          <div class="metric-unit">%RH</div>
+        </div>
+        <div class="humidity-visual" id="humVisual">
+          <div class="water-fill" id="waterFill"></div>
+          <div class="water-wave"></div>
+        </div>
+        <div class="metric-sub weather-source">
+          <span class="weather-dot">🌐</span>
+          <span>OpenWeatherMap API</span>
+        </div>
+      </div>
+
+      <!-- Air Quality Index — dual: MQ-135 sensor + Outdoor weather AQI -->
+      <div class="metric-card aqi-card">
+        <div class="metric-label">MQ-135 · Indoor AQI</div>
+        <div class="aqi-display">
+          <div class="aqi-number" id="aqiValue">---</div>
+          <div class="aqi-label" id="aqiLabel">Calculating...</div>
+        </div>
+        <div class="aqi-scale">
+          <div class="aqi-segment good">Good</div>
+          <div class="aqi-segment moderate">Moderate</div>
+          <div class="aqi-segment unhealthy">Unhealthy</div>
+          <div class="aqi-segment hazardous">Hazardous</div>
+        </div>
+        <div class="aqi-pointer-wrap">
+          <div class="aqi-pointer" id="aqiPointer"></div>
+        </div>
+        <div class="weather-aqi-divider"></div>
+        <div class="metric-label" style="margin-top:8px;">🌤 Outdoor AQI</div>
+        <div class="weather-aqi-row">
+          <span class="weather-aqi-num" id="weatherAqiVal">--</span>
+          <span class="weather-aqi-label" id="weatherAqiLabel">Loading...</span>
+          <span class="weather-source-tag">OpenWeatherMap</span>
+        </div>
+      </div>
+
+      <!-- Alert Log -->
+      <div class="metric-card alerts-card">
+        <div class="metric-label">⚠ Alert Log</div>
+        <div class="alert-list" id="alertList">
+          <div class="no-alerts">No alerts detected</div>
+        </div>
+        <button class="clear-btn" onclick="clearAlerts()">Clear All</button>
+      </div>
+
+    </section>
+
+    <!-- Bottom Row: History Chart -->
+    <section class="chart-section">
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title">Sensor History (Last 60s)</span>
+          <div class="chart-legend">
+            <span class="legend-dot mq2-dot"></span><span>MQ-2</span>
+            <span class="legend-dot mq135-dot"></span><span>MQ-135</span>
+            <span class="legend-dot temp-dot"></span><span>Temp °C×5</span>
+            <span class="legend-dot hum-dot"></span><span>Humidity %</span>
+          </div>
+          <div class="chart-controls">
+            <button class="ctrl-btn active" data-range="60">1min</button>
+            <button class="ctrl-btn" data-range="300">5min</button>
+            <button class="ctrl-btn" data-range="600">10min</button>
+          </div>
+        </div>
+        <canvas id="historyChart" width="1200" height="220"></canvas>
+      </div>
+    </section>
+
+    <!-- Device Info -->
+    <section class="device-row">
+      <div class="device-card">
+        <div class="device-icon">⚡</div>
+        <div class="device-info">
+          <div class="device-name">ESP32 DevKit</div>
+          <div class="device-detail">240MHz · Dual Core · WiFi</div>
+        </div>
+        <div class="device-val">
+          <span>IP:</span> <span id="espIP">192.168.1.100</span>
+        </div>
+      </div>
+      <div class="device-card">
+        <div class="device-icon">📡</div>
+        <div class="device-info">
+          <div class="device-name">Signal Strength</div>
+          <div class="device-detail">WiFi RSSI</div>
+        </div>
+        <div class="signal-bars" id="signalBars">
+          <div class="bar b1 active"></div>
+          <div class="bar b2 active"></div>
+          <div class="bar b3 active"></div>
+          <div class="bar b4"></div>
+        </div>
+      </div>
+      <div class="device-card">
+        <div class="device-icon">🔋</div>
+        <div class="device-info">
+          <div class="device-name">Uptime</div>
+          <div class="device-detail">Since boot</div>
+        </div>
+        <div class="device-val uptime" id="uptime">00:00:00</div>
+      </div>
+      <div class="device-card">
+        <div class="device-icon">📊</div>
+        <div class="device-info">
+          <div class="device-name">Samples Taken</div>
+          <div class="device-detail">Total readings</div>
+        </div>
+        <div class="device-val" id="sampleCount">0</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Alert Toast -->
+  <div class="toast" id="toast"></div>
+  <script src="firebase.js"></script>
+
+  <script src="app.js"></script>
+</body>
+</html>
