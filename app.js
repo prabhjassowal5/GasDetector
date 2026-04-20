@@ -31,7 +31,7 @@ const FB_LIVE_PATH = 'sensorData';
 //  MQ-2 & MQ-135 Firebase sensors are NOT touched by this
 // ════════════════════════════════════════════════════════════
 const WEATHER = {
-  CITY:     'Ludhiana',   // ← change to YOUR city name
+  CITY:     'Chandigarh',   // ← change to YOUR city name
   POLL_MIN: 10,             // fetch every 10 minutes (free tier: no limit)
 };
 
@@ -61,10 +61,10 @@ function mapField(raw, candidates) {
 //  App Config  (thresholds, limits)
 // ════════════════════════════════════════════════════════════
 const CONFIG = {
-  MQ2_WARN:     200,
-  MQ2_DANGER:   300,
-  MQ135_WARN:   300,
-  MQ135_DANGER: 400,
+  MQ2_WARN:     1000,   // WARNING  starts at 1000 ppm
+  MQ2_DANGER:   1200,   // DANGER   starts at 1200 ppm
+  MQ135_WARN:   1000,   // WARNING  starts at 1000 ppm
+  MQ135_DANGER: 1200,   // DANGER   starts at 1200 ppm
   TEMP_MAX:     60,
   HUM_MAX:      100,
   HISTORY_MAX:  600,    // readings kept in memory (~20 min @2s)
